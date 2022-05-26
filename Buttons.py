@@ -1,7 +1,11 @@
 import pygame
 
 class Button():
-    def __init__(self, text, width, height, pos, elevation, gui_font, colors):
+    def __init__(self, game, text, width, height, pos, elevation, gui_font, colors, function):
+        self.game = game #importing game so it can modify crucial variables
+
+        self.function = function
+
         self.pressed = False #Pressed state, prevents buttons from activating multiple times in one click
         self.elevation = elevation #The fixed elevation for the top rect
         self.dynamic_elevation = elevation #The changable elevation for the top rect, sets to 0 when clicked to create clicking effect
@@ -17,6 +21,8 @@ class Button():
 
         self.text_surf = gui_font.render(text, True, '#FFFFFF') #Text surface
         self.text_rect = self.text_surf.get_rect(center = self.top_rect.center) #Text rectangle
+
+        self.top_rect.center = pos #Setting position of the button as the center
 
     def draw(self, screen):
         self.top_rect.y = self.origin_y_pos - self.dynamic_elevation #Setting the y of top rect by elevation amount
@@ -37,8 +43,9 @@ class Button():
                 self.dynamic_elevation = 0 #Set elevation back to 0 making the top rect move down to the bottom rect creaing a 3d effect
                 self.pressed = True #Pressed boolean to prevent multiple iterations of the click loop running in one click
             else:
+                self.dynamic_elevation = self.elevation #Set elevation back when key is released
                 if self.pressed == True:
-                    self.dynamic_elevation = self.elevation #Set elevation back when key is released
+                    self.function(self.game) #Run the assigned function with main game as the parameter
                     self.pressed = False
 
         else:
