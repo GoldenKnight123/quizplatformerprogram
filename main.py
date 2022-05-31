@@ -1,19 +1,14 @@
 import pygame, time
 import sys
 from Buttons import Button
+from Player import Player
 
 def initiate():
     pygame.init()
 
-screen = pygame.display.set_mode([640, 480])
+screen = pygame.display.set_mode([1280, 720], pygame.DOUBLEBUF, 8)
 
-running = True
-
-fadeObject = pygame.Surface((640, 480))
-fadeObject.fill((0, 0, 0))
-fadeIn = False
-fadeOut = False
-        
+running = True 
 
 def startButtonFunction(game):
     game.fading = 'OUT'
@@ -38,12 +33,14 @@ class MainMenuScreen:
         self.game = game
         self.gameObjects = []
 
+        self.background_surf = pygame.image.load('Selected Assets/Background.png').convert_alpha() #Load background image
+
         #Initialising Game Objects
-        self.gameObjects.append(Button(self.game, 'Start', 200, 40, (320, 200), 10, gui_font, ('#475F77', '#354B5E', '#D74B4B'), startButtonFunction))
-        self.gameObjects.append(Button(self.game, 'Quit', 200, 40, (320, 400), 10, gui_font, ('#475F77', '#354B5E', '#D74B4B'), quitButtonFunction))
+        self.gameObjects.append(Button(self.game, 'Start', 300, 60, (640, 300), 20, gui_font, ('#475F77', '#354B5E', '#D74B4B'), startButtonFunction))
+        self.gameObjects.append(Button(self.game, 'Quit', 300, 60, (640, 500), 20, gui_font, ('#475F77', '#354B5E', '#D74B4B'), quitButtonFunction))
 
     def draw(self): #Main draw function
-        self.screen.fill((0, 0, 255)) #Fill background color
+        self.screen.blit(self.background_surf, (0, 0)) #Blit (place), the background image onto the screen
         for i in self.gameObjects: #Loop each object in list of gameObjects and draw them
             i.draw(self.screen)
          
@@ -56,12 +53,12 @@ class MainMenuScreen:
             pygame.display.update()
 
     def fade(self, mode): #Transition function for fade effect
-        fade = pygame.Surface((640, 480)) #Creating new surface that covers screen
+        fade = pygame.Surface((1280, 720)) #Creating new surface that covers screen
         fade.fill((0, 0, 0)) #Fill it black
         self.game.fading = 'RUNNING' #Set fading state to RUNNING so game main draw function new longer updates display
-        for alpha in range(0, 255): #Loop for each alpha level
-            if mode == 'OUT': fade.set_alpha(alpha) #Fade out mode: black becomes strongers over time
-            elif mode == 'IN': fade.set_alpha(255-alpha) #Fade in mode: black becomes weaker over time
+        for alpha in range(0, 51): #Loop for each alpha level
+            if mode == 'OUT': fade.set_alpha(alpha*5) #Fade out mode: black becomes strongers over time
+            elif mode == 'IN': fade.set_alpha(255-alpha*5) #Fade in mode: black becomes weaker over time
             self.draw() #Run the main draw function of the screen to keep objects on screen
             self.screen.blit(fade, (0, 0)) #Draw fade surface on screen
             pygame.display.update() #Update display
@@ -80,12 +77,13 @@ class GameScreen:
         self.game = game
         self.gameObjects = []
 
+        self.background_surf = pygame.image.load('Selected Assets/Background.png').convert_alpha() #Load background image
+
         #Initialising Game Objects
-        self.gameObjects.append(Button(self.game, 'Start', 200, 40, (320, 200), 10, gui_font, ('#475F77', '#354B5E', '#D74B4B'), startButtonFunction))
-        self.gameObjects.append(Button(self.game, 'Quit', 200, 40, (320, 400), 10, gui_font, ('#475F77', '#354B5E', '#D74B4B'), quitButtonFunction))
+        self.gameObjects.append(Player(self.game, (300, 300)))
 
     def draw(self): #Main draw function
-        self.screen.fill((0, 255, 0)) #Fill background color
+        self.screen.blit(self.background_surf, (0, 0)) #Blit (place), the background image onto the screen
         for i in self.gameObjects: #Loop each object in list of gameObjects and draw them
             i.draw(self.screen)
          
@@ -98,12 +96,12 @@ class GameScreen:
             pygame.display.update()
 
     def fade(self, mode): #Transition function for fade effect
-        fade = pygame.Surface((640, 480)) #Creating new surface that covers screen
+        fade = pygame.Surface((1280, 720)) #Creating new surface that covers screen
         fade.fill((0, 0, 0)) #Fill it black
         self.game.fading = 'RUNNING' #Set fading state to RUNNING so game main draw function new longer updates display
-        for alpha in range(0, 255): #Loop for each alpha level
-            if mode == 'OUT': fade.set_alpha(alpha) #Fade out mode: black becomes strongers over time
-            elif mode == 'IN': fade.set_alpha(255-alpha) #Fade in mode: black becomes weaker over time
+        for alpha in range(0, 51): #Loop for each alpha level
+            if mode == 'OUT': fade.set_alpha(alpha*5) #Fade out mode: black becomes strongers over time
+            elif mode == 'IN': fade.set_alpha(255-alpha*5) #Fade in mode: black becomes weaker over time
             self.draw() #Run the main draw function of the screen to keep objects on screen
             self.screen.blit(fade, (0, 0)) #Draw fade surface on screen
             pygame.display.update() #Update display
@@ -118,6 +116,7 @@ class Game:
     def __init__(self):
         self.mainmenuscreen = MainMenuScreen(screen, self)
         self.gamescreen = GameScreen(screen, self)
+        #self.player = Player(self, (300, 300))
         self.clock = pygame.time.Clock()
         self.gameState = 'MAINMENU'
         self.fading = 'NONE'
@@ -126,11 +125,11 @@ class Game:
         if self.gameState == 'MAINMENU':
             self.mainmenuscreen.draw()
             self.mainmenuscreen.update()
-            print('main drawn')
+            #print('main drawn')
         elif self.gameState == 'GAME':
             self.gamescreen.draw()
             self.gamescreen.update()
-            print('game draw')
+            #print('game draw')
 
         self.clock.tick(60)
         pygame.display.update()
@@ -142,6 +141,7 @@ class Game:
                     return
 
             self.draw()
+            #print(self.clock.get_fps())
 
 initiate()
 gui_font = pygame.font.Font(None, 30)
