@@ -1,10 +1,17 @@
 import pygame
+from tkinter import messagebox
 
 class Button():
     def __init__(self, game, text, width, height, pos, elevation, gui_font, colors, function):
         self.game = game #importing game so it can modify crucial variables
 
         self.function = function
+
+        try:
+            self.click_sound = pygame.mixer.Sound('Selected Assets/Game Sounds/Button Press.wav')
+        
+        except FileNotFoundError:
+            messagebox.showinfo('Error', 'Game files are missing. Game may crash unexpectedly or not display textures.')
 
         self.pressed = False #Pressed state, prevents buttons from activating multiple times in one click
         self.elevation = elevation #The fixed elevation for the top rect
@@ -45,6 +52,8 @@ class Button():
             else:
                 self.dynamic_elevation = self.elevation #Set elevation back when key is released
                 if self.pressed == True:
+                    self.click_sound.play()
+                    pygame.time.wait(100)
                     self.function(self.game) #Run the assigned function with main game as the parameter
                     self.pressed = False
 

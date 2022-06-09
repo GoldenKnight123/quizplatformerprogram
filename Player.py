@@ -1,35 +1,51 @@
 import pygame
+from tkinter import messagebox
 
 class Player(): 
     def __init__(self, game, pos):
         self.game = game
-        self.id = 'Player'
+        self.id = 'Player' #Allocate player id
         
-        self.direction = 0
+        self.direction = 0 #Direction value used for animation and flipping
+
+        #Attempt to load sound files
+        try:
+            self.jump_sound = pygame.mixer.Sound('Selected Assets/Game Sounds/Player Jump.wav')
+            self.run_sound = pygame.mixer.Sound('Selected Assets/Game Sounds/Footsteps.wav')
+            self.run_sound_cooldown = 20
+        
+        #On file not found error give popup message that game may crash
+        except FileNotFoundError:
+            messagebox.showinfo('Error', 'Game files are missing. Game may crash unexpectedly or not display textures.')
 
         self.velX = 0
         self.velY = 0
 
         self.gravity = -0.4
         self.jumping = False
-        self.jump_cooldown = True
+        self.jump_cooldown = 3
         self.moving = False
 
         self.animation_cooldown = 30 #Cooldown for animation ticks
         self.last_time = pygame.time.get_ticks() #Previous tick time
         
-        #Importing animation frames
-        self.idleAnimation = []
-        for i in range(15):
-            self.idleAnimation.append(pygame.image.load(f'Selected Assets/Player/Idle ({i+1}).png').convert_alpha())
+        #Attempt to import animation frames
+        try:
+            self.idleAnimation = []
+            for i in range(15):
+                self.idleAnimation.append(pygame.image.load(f'Selected Assets/Player/Idle ({i+1}).png').convert_alpha())
 
-        self.jumpAnimation = []
-        for i in range(15):
-            self.jumpAnimation.append(pygame.image.load(f'Selected Assets/Player/Jump ({i+1}).png').convert_alpha())
-        
-        self.runAnimation = []
-        for i in range(15):
-            self.runAnimation.append(pygame.image.load(f'Selected Assets/Player/Run ({i+1}).png').convert_alpha())
+            self.jumpAnimation = []
+            for i in range(15):
+                self.jumpAnimation.append(pygame.image.load(f'Selected Assets/Player/Jump ({i+1}).png').convert_alpha())
+            
+            self.runAnimation = []
+            for i in range(15):
+                self.runAnimation.append(pygame.image.load(f'Selected Assets/Player/Run ({i+1}).png').convert_alpha())
+
+        #On file not found error give popup message that game may crash
+        except FileNotFoundError:
+            messagebox.showinfo('Error', 'Game files are missing. Game may crash unexpectedly or not display textures.')
         
         self.frame = 0
 
@@ -55,7 +71,7 @@ class Player():
     def draw(self, screen):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_time >= self.animation_cooldown: #If cooldown is reached
-            if not self.jump_cooldown and self.frame == 14:
+            if self.jumping and self.frame == 14:
                 pass
             else:
                 self.frame += 1 #Go to next frame
@@ -69,6 +85,36 @@ class Player():
         else:
             screen.blit(self.flipped_image, self.rect) #Draw itself onto the screen with the rectangle hitbox as the surface/position for reference
 
+    def moveX(self):
+        if self.velX >= 5: self.velX = 5 #Limit right movement speed
+        if self.velX <= -5: self.velX = -5 #Limit left movement speed
+        self.rect.x += self.velX #Change x position by velX
+        for i in self.game.gamescreen.gameObjects: #Loop through all game objects on the screen
+            if i.id == 'Floor': #If it is a floor object
+                if i.rect.colliderect(self.rect): #If it is colliding with the player
+                    #Left to right collision
+                    if self.velX > 0:
+                        self.rect.right = i.rect.left
+                    elif self.velX < 0:
+                        self.rect.left = i.rect.right  
+
+    def moveY(self):
+        keys = pygame.key.get_pressed()
+        if self.velY >= 8 : self.velY = 8 #Limit fall speed
+        self.rect.y += self.velY #Change y position by velY
+        for i in self.game.gamescreen.gameObjects: #Loop through all game objects on the screen
+            if i.id == 'Floor': #If it is a floor object
+                if i.rect.colliderect(self.rect): #If it is colliding with the player 
+                    #Top to bottom collision
+                    if self.velY > 0 : 
+                        self.rect.bottom = i.rect.top
+                        self.jumping = False
+                        if not keys[pygame.K_SPACE]:
+                            self.jump_cooldown = 3
+                    #Bottom to top collision
+                    elif self.velY < 0 :
+                        self.rect.top = i.rect.bottom
+    
     def update(self):
         keys = pygame.key.get_pressed()
 
@@ -86,41 +132,36 @@ class Player():
             elif self.velX < 0:
                 self.velX += 0.5
             self.moving = False
+            self.run_sound_cooldown = 20
 
-        if keys[pygame.K_SPACE] and self.jump_cooldown: #If jump key pressed and the player is able to jump
+        if keys[pygame.K_SPACE] and self.jump_cooldown == 3 and not self.jumping: #If jump key pressed and the player is able to jump
             self.velY = -7.5 #Boost into the air
-            self.jump_cooldown = False #Set jump cooldown so the player cannot jump again in the air
+            self.jump_cooldown -= 1 #Set jump cooldown so the player cannot jump again in the air
             self.jumping = True
             self.frame = 0
-            print('jumping')   
+            self.jump_sound.play()
+            print(self.jump_cooldown)   
+        
+        if not keys[pygame.K_SPACE] and self.jump_cooldown == 2: #If jump key pressed and the player is able to jump
+            self.jump_cooldown = 1
+            print(self.jump_cooldown)  
+
+        if keys[pygame.K_SPACE] and self.jump_cooldown == 1: #If jump key pressed and the player is able to jump
+            self.velY = -7.5 #Boost into the air
+            self.jump_cooldown -= 1 #Set jump cooldown so the player cannot jump again in the air
+            self.jumping = True
+            self.frame = 0
+            self.jump_sound.play()
+            print(self.jump_cooldown)
+
+        if self.moving and not self.jumping:
+            if self.run_sound_cooldown <= 0:
+                self.run_sound.play()
+                self.run_sound_cooldown = 20
+            else:
+                self.run_sound_cooldown -= 1
 
         self.velY -= self.gravity #Constant gravity decrease to velY
 
-        if self.velX >= 5: self.velX = 5 #Limit right movement speed
-        if self.velX <= -5: self.velX = -5 #Limit left movement speed
-        if self.velY >= 5 : self.velY = 5 #Limit fall speed
-
-        self.rect.x += self.velX #Change x position by velX
-        for i in self.game.gamescreen.gameObjects: #Loop through all game objects on the screen
-            if i.id == 'Floor': #If it is a floor object
-                if i.rect.colliderect(self.rect): #If it is colliding with the player
-                    #Left to right collision
-                    if self.velX > 0:
-                        self.rect.right = i.rect.left
-                    elif self.velX < 0:
-                        self.rect.left = i.rect.right  
-
-        self.rect.y += self.velY #Change y position by velY
-        for i in self.game.gamescreen.gameObjects: #Loop through all game objects on the screen
-            if i.id == 'Floor': #If it is a floor object
-                if i.rect.colliderect(self.rect): #If it is colliding with the player 
-                    #Top to bottom collision
-                    if self.velY > 0 : 
-                        self.rect.bottom = i.rect.top
-                        self.jumping = False
-                        if not keys[pygame.K_SPACE]:
-                            self.jump_cooldown = True
-                    #Bottom to top collision
-                    elif self.velY < 0 :
-                        self.rect.top = i.rect.bottom
-        
+        self.moveX()
+        self.moveY()
