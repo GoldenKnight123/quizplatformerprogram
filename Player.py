@@ -53,7 +53,7 @@ class Player():
         self.rect.topleft = pos #Set the top of the rectangle to the given position
 
         self.processImage()
-
+    
     def processImage(self): #This function updates the frame the animation is on
         if self.jumping:
             self.image = self.jumpAnimation[self.frame]
@@ -78,8 +78,11 @@ class Player():
             self.last_time = current_time #Set the last time to current time
             if self.frame >= len (self.idleAnimation): #If animation ended repeat it
                 self.frame = 0
-        self.processImage()
         #pygame.draw.rect(screen, (0, 0, 0), self.rect) #For debugging purposes and seeing hitboxes
+        
+        if not self.game.gameState == 'QUESTIONVIEW':
+            self.processImage()
+        
         if self.direction == 1:
             screen.blit(self.flipped_image, (self.rect.x-28, self.rect.y), (60, 0, 100, 141)) #Draw itself onto the screen with the rectangle hitbox as the surface/position for reference
         else:
