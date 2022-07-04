@@ -7,15 +7,9 @@ from tkinter import messagebox
 class QuestionGenerator:
     def __init__(self, game):
         self.game = game
-        with open('EasyQuestions.json') as f:
-            self.data = json.load(f) #This line turns the data taken from the site and loads it into a list
     
     def generateQuestions(self):
-        #try:
-        #    data = requests.get('https://opentdb.com/api.php?amount=1&difficulty=easy&type=multiple')
-        #except requests.exceptions.RequestException:
-        #    messagebox.showinfo('Error', 'Could not retrieve questions from Open Trivia API Database. Please check your internet connection.')
-        random_index = random.randint(1, len(self.data)-1)
+        random_index = random.randint(0, len(self.data['results'])-1)
         question_data = self.data['results'][random_index]
         del self.data['results'][random_index]
         question_type = question_data['type'] 
@@ -30,7 +24,12 @@ class QuestionGenerator:
             for i in range(len(answers)): #Turns html entities into unicode symbols for all answers
                 answers[i] = html.unescape(answers[i])
 
-        print(question)
-        print(correct_answer)
-        print(answers)
         return question, correct_answer, answers
+
+    def requestQuestions(self):
+        try:
+            self.data = requests.get('https://opentdb.com/api.php?amount=50&difficulty=easy&type=multiple')
+            self.data = json.loads(self.data.text)
+            print(self.data)
+        except requests.exceptions.RequestException:
+            messagebox.showinfo('Error', 'Could not retrieve questions from Open Trivia API Database. Please check your internet connection.')

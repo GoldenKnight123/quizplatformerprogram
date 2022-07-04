@@ -2,13 +2,17 @@ import pygame
 from tkinter import messagebox
 
 class Button():
-    def __init__(self, game, text, width, height, pos, elevation, gui_font, colors, function):
+    def __init__(self, game, text, width, height, pos, elevation, gui_font, colors, function, param=None):
         self.game = game #importing game so it can modify crucial variables
 
+        self.id = 'Button'
+
         self.function = function
+        self.param = param
 
         try:
             self.click_sound = pygame.mixer.Sound('Selected Assets/Game Sounds/Button Press.wav')
+            self.click_sound.set_volume(self.game.volume)
         
         except FileNotFoundError:
             messagebox.showinfo('Error', 'Game files are missing. Game may crash unexpectedly or not display textures.')
@@ -43,6 +47,8 @@ class Button():
         screen.blit(self.text_surf, self.text_rect) #Rendering text surfaces
 
     def update(self):
+        self.click_sound.set_volume(self.game.volume)
+        
         mouse_pos = pygame.mouse.get_pos() #Get mouse position
         if self.top_rect.collidepoint(mouse_pos): #If mouse if over button
             self.top_color = self.colors[2] #Change color
@@ -54,9 +60,12 @@ class Button():
                 if self.pressed == True:
                     self.click_sound.play()
                     pygame.time.wait(100)
-                    self.function(self.game) #Run the assigned function with main game as the parameter
+                    if self.param != None:
+                        self.function(self.game, self.param) #Run the assigned function with main game as the parameter
+                    else:
+                        self.function(self.game)
                     self.pressed = False
 
         else:
             self.dynamic_elevation = self.elevation #Set elevation back when mouse is no longer hovering over button
-            self.top_color = self.colors[0] #Change color backs
+            self.top_color = self.colors[0] #Change color back

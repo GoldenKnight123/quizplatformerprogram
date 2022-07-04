@@ -68,5 +68,5 @@ class FloorTile:
         screen.blit(self.scaled_image, self.rect)
 
     def update(self):
-        if self.rect.x <= -64:
+        if self.rect.x <= -128:
             self.game.gamescreen.gameObjects.remove(self)

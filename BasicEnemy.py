@@ -2,9 +2,10 @@ import random
 import pygame
 import math
 from QuestonObject import QuestionObject
+from tkinter import messagebox
 
 class BasicEnemy():
-    def __init__(self, game, pos):
+    def __init__(self, game, pos, walkAnimation, runAnimation, jumpAnimation):
         self.game = game
         self.id = 'Enemy'
 
@@ -20,14 +21,57 @@ class BasicEnemy():
         self.jumping = False
 
         self.direction_change = random.randint(200, 300)
+        if self.velX < 0:
+            self.direction = 1
+        elif self.velX > 0:
+            self.direction = 0
 
-        self.rect = pygame.Rect(pos, (64, 64))
+        self.rect = pygame.Rect(pos, (64, 126))
         self.rect.topleft = pos
+
+        self.walkAnimation = walkAnimation
+        self.runAnimation = runAnimation
+        self.jumpAnimation = jumpAnimation
+
+        self.frame = 0
+        self.animation_cooldown = 30
+        self.last_time = pygame.time.get_ticks()
+    
+    def processImage(self):
+        if self.jumping:
+            self.image = self.jumpAnimation[self.frame]
+        elif self.player_chase:
+            self.image = self.runAnimation[self.frame]
+        elif not self.jumping:
+            self.image = self.walkAnimation[self.frame]
+
+        self.size = self.image.get_size() #Get the size of the image
+        self.scaled_image = pygame.transform.scale(self.image, (int(self.size[0]/4), int(self.size[1]/4))) #Rescale it to 25% of the original size
+        self.flipped_image = self.scaled_image
+        
+        if self.direction == 1:
+            self.flipped_image = pygame.transform.flip(self.scaled_image, True, False)
     
     def draw(self, screen):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect)
-        self.question_object.draw(screen)
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_time >= self.animation_cooldown: #If cooldown is reached
+            self.frame += 1 #Go to next frame
+            self.last_time = current_time #Set the last time to current time
+            if self.frame >= len (self.walkAnimation): #If animation ended repeat it
+                self.frame = 0
+        
+        #pygame.draw.rect(screen, (255, 0, 0), self.rect)
 
+        if not self.game.gameState == 'QUESTIONVIEW' and not self.game.gameState == 'PAUSED':
+            self.processImage()
+
+        if self.direction == 1:
+            screen.blit(self.flipped_image, (self.rect.x-85, self.rect.y)) #Draw itself onto the screen with the rectangle hitbox as the surface/position for reference
+        else:
+            screen.blit(self.flipped_image, self.rect) #Draw itself onto the screen with the rectangle hitbox as the surface/position for reference
+
+        self.question_object.draw(screen)
+    
     def moveX(self):
         if self.velX >= 5: self.velX = 5 #Limit right movement speed
         if self.velX <= -5: self.velX = -5 #Limit left movement speed
@@ -41,11 +85,13 @@ class BasicEnemy():
                         if not self.jumping:
                             self.velY = -7.5
                             self.jumping = True
+                            self.frame = 0
                     elif self.velX < 0:
                         self.rect.left = i.rect.right
                         if not self.jumping:
                             self.velY = -7.5
                             self.jumping = True
+                            self.frame = 0
 
     def moveY(self):
         if self.velY >= 8 : self.velY = 8 #Limit fall speed
@@ -67,10 +113,20 @@ class BasicEnemy():
         self.question_object.update()
         self.velY -= self.gravity #Constant gravity decrease to velY
 
+        if self.velX < 0:
+            self.direction = 1
+        elif self.velX > 0:
+            self.direction = 0
+
         for i in self.game.gamescreen.gameObjects:
             if i.id == 'Player':
                 player_x = i.rect.x
                 player_y = i.rect.y
+                player_dead = i.dead
+
+        if player_dead and self.player_chase:
+            self.player_chase = False
+            self.velX = random.choice([-1, 1])
 
         if self.direction_change <= 0:
             self.velX *= -1
@@ -79,6 +135,9 @@ class BasicEnemy():
             self.direction_change -= 1
 
         if self.rect.x <= -64:
+            self.game.gamescreen.gameObjects.remove(self)
+
+        if self.rect.y >= 720:
             self.game.gamescreen.gameObjects.remove(self)
 
         if self.player_chase:
@@ -93,7 +152,7 @@ class BasicEnemy():
             else:
                 self.random_jump -= 1
         
-        elif (abs(math.sqrt((player_x-self.rect.x)**2 + (player_y-self.rect.y)**2))) <= 200:
+        elif (abs(math.sqrt((player_x-self.rect.x)**2 + (player_y-self.rect.y)**2))) <= 200 and not player_dead:
                     self.player_chase = True
         
         self.moveX()
